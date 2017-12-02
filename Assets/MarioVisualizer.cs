@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -74,30 +74,31 @@ public class MarioVisualizer : MonoBehaviour {
     public void Walk()
     {
         _lastState = States.Walking;
+        ChangeAnimator();
     }
 
     public void WalkBackwards()
     {
         _lastState = States.WalkingBackwards;
-
+        ChangeAnimator();
     }
 
     public void Jump()
     {
         _lastState = States.Jumping;
-
+        ChangeAnimator();
     }
 
     public void JumpBackwards()
     {
         _lastState = States.JumpingBackwards;
-
+        ChangeAnimator();
     }
 
     public void Idle()
     {
         _lastState = States.Idle;
-
+        ChangeAnimator();
 
     }
 }

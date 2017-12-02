@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -14,8 +14,12 @@ public class MarioController : MonoBehaviour {
     public float lowJumpMultiplier = 2f;
     public float MaxSpeed = 2f;
 
+    public MarioVisualizer marioVisual;
+
     // Use this for initialization
     void Start () {
+        marioStates = new MarioStates();
+        marioVisual = GetComponent<MarioVisualizer>();
         _rigidbody = GetComponent<Rigidbody2D>();
 	}
 
@@ -40,6 +44,22 @@ public class MarioController : MonoBehaviour {
                 velo.y = 0;
                 _rigidbody.velocity = velo;
             }
+        } 
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.CompareTag("Enemy"))
+        {
+            Destroy(collision.gameObject);
+            Debug.Log("Enemy");
+            EnemiesTrigger();
+        }
+        else if (collision.CompareTag("Burger"))
+        {
+            Destroy(collision.gameObject);
+            Debug.Log("Burger");
+            BurgerTrigger();
         }
     }
 
@@ -94,5 +114,61 @@ public class MarioController : MonoBehaviour {
         }
 
         _rigidbody.velocity = velo;
+
+        if (_rigidbody.velocity.x > 0)
+        {
+            marioVisual.Walk();
+        }
+        else if (_rigidbody.velocity.x < 0)
+        {
+            marioVisual.WalkBackwards();
+        } else
+        {
+            marioVisual.Idle();
+        }
     }
+
+
+    public void EnemiesTrigger()
+    {
+        marioStates.burgersEaten--;
+        this.transform.localScale = new Vector3(marioStates.burgersEaten * 0.2f - 1, marioStates.burgersEaten * 0.2f - 1, marioStates.burgersEaten * 0.2f - 1);
+        if (marioStates.burgersEaten <= 0)
+        {
+            this.transform.localScale = Vector3.one;
+        }
+    }
+
+    public void BurgerTrigger()
+    {
+        marioStates.burgersEaten++;
+        this.transform.localScale = new Vector3(marioStates.burgersEaten * 0.2f + 1, marioStates.burgersEaten * 0.2f + 1, marioStates.burgersEaten * 0.2f + 1);
+        if(marioStates.burgersEaten <= 0)
+        {
+            this.transform.localScale = Vector3.one;
+        }
+    }
+    
+    public void CarrotHelper()
+    {
+        marioStates.burgersEaten++;
+        this.transform.localScale = new Vector3(marioStates.burgersEaten * 0.2f + 1, marioStates.burgersEaten * 0.2f + 1, marioStates.burgersEaten * 0.2f + 1);
+        if (marioStates.burgersEaten <= 0)
+        {
+            this.transform.localScale = Vector3.one;
+        }
+    }
+
+    public void OnBeforeTransformParentChanged()
+    {
+        marioVisual.SetSlim(marioStates.burgersEaten < 0);
+    }
+    public MarioStates marioStates;
+
+}
+
+public class MarioStates
+{
+    public int burgersEaten = 0;
+    
 }
