@@ -6,53 +6,98 @@ public class MarioVisualizer : MonoBehaviour {
 
     public void SetSlim(bool isSlim)
     {
-        // get state
-        _animator = isSlim ? SlimAnimator : FatAnimmator;
-        // set the same state
+        _isSlim = isSlim;
+        // repeat last state
+        ChangeAnimator();
     }
 
+    private bool _isSlim;
     private Animator _animator;
-    public Animator SlimAnimator;
-    public Animator FatAnimmator;
+    enum States { 
+        Walking,
+        WalkingBackwards,
+        Jumping,
+        JumpingBackwards,
+        Idle
+    }
+    private States _lastState = States.Idle;
+
+    void ChangeAnimator()
+    {
+        switch (_lastState)
+        {
+            case States.Walking:
+                _animator.SetTrigger(AdjustName("Walk"));
+
+                break;
+            case States.WalkingBackwards:
+                _animator.SetTrigger(AdjustName("WalkBackwards"));
+
+                break;
+            case States.Jumping:
+                _animator.SetTrigger(AdjustName("Jump"));
+
+                break;
+            case States.JumpingBackwards:
+                _animator.SetTrigger(AdjustName("JumpBackwards"));
+
+                break;
+            case States.Idle:
+                _animator.SetTrigger(AdjustName("Idle"));
+
+                break;
+        }
+    }
 
 	void Start () {
-        _animator = SlimAnimator;
-
+        _animator = GetComponent<Animator>();
 	}
 	
-    public bool DebugSwitchSlim = false;
-    public bool DebugIsSlim = true;
 	void Update () {
-		if (DebugSwitchSlim)
-        {
-            DebugIsSlim = !DebugIsSlim;
-            SetSlim(DebugIsSlim);
-            DebugSwitchSlim = false;
-        }
-	}
+		//if (Input.GetKeyDown(KeyCode.F))
+  //      {
+  //          Debug.Log("Get Slim");
+  //          SetSlim(!_isSlim);
+  //      }
+
+  //      if (Input.GetKey(KeyCode.W))
+  //      {
+  //          Walk();
+  //      }
+    }
+
+    private string AdjustName(string command)
+    {
+        return command + (_isSlim ? "" : "Fat");
+    }
     
     public void Walk()
     {
-        _animator.SetTrigger("Walk");
+        _lastState = States.Walking;
     }
 
     public void WalkBackwards()
     {
-        _animator.SetTrigger("WalkBackwards");
+        _lastState = States.WalkingBackwards;
+
     }
 
     public void Jump()
     {
+        _lastState = States.Jumping;
 
     }
 
     public void JumpBackwards()
     {
+        _lastState = States.JumpingBackwards;
 
     }
 
     public void Idle()
     {
+        _lastState = States.Idle;
+
 
     }
 }
