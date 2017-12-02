@@ -12,14 +12,12 @@ public class MarioController : MonoBehaviour {
 
     public float fallMultiplier = 2.5f;
     public float lowJumpMultiplier = 2f;
+    public float MaxSpeed = 2f;
 
     // Use this for initialization
     void Start () {
         _rigidbody = GetComponent<Rigidbody2D>();
 	}
-    // b jump, a sprint
-    // left right walk
-    // Update is called once per frame
 
     private bool _grounded
     {
@@ -33,8 +31,15 @@ public class MarioController : MonoBehaviour {
     {
         if (collision.collider.CompareTag("Ground"))
         {
-            Debug.Log("Grounded");
+            Debug.Log("Grounded ");
             _numGrounded++;
+
+            if (_numGrounded > 1)
+            {
+                var velo = _rigidbody.velocity;
+                velo.y = 0;
+                _rigidbody.velocity = velo;
+            }
         }
     }
 
@@ -45,26 +50,30 @@ public class MarioController : MonoBehaviour {
             Debug.Log("Ungrounded");
 
             _numGrounded--;
+
+            
         }
     }
 
-    void FixedUpdate () {
+    public float SlowDownLerp = .3f;
+    void Update () {
         var h = Input.GetAxis("Horizontal");
 
-        _rigidbody.velocity += VelocityMultiplier * h * Vector2.right * Time.fixedDeltaTime;
+        _rigidbody.velocity += VelocityMultiplier * h * Vector2.right * Time.deltaTime;
 
         if (Input.GetButton("Jump") && _grounded)
         {
-            _rigidbody.velocity += Vector2.up * JumpVelocity * Time.fixedDeltaTime;
+            _rigidbody.velocity += Vector2.up * JumpVelocity * Time.deltaTime;
+            // different velocities based on speed
         }
 
         if (_rigidbody.velocity.y < -0.01)
         {
-            _rigidbody.velocity += Vector2.up * Physics2D.gravity.y * (fallMultiplier - 1) * Time.fixedDeltaTime;
+            _rigidbody.velocity += Vector2.up * Physics2D.gravity.y * (fallMultiplier - 1) * Time.deltaTime;
         }
         else if (_rigidbody.velocity.y > 0.01 && !Input.GetButton("Jump"))
         {
-            _rigidbody.velocity += Vector2.up * Physics2D.gravity.y * (lowJumpMultiplier - 1) * Time.fixedDeltaTime;
+            _rigidbody.velocity += Vector2.up * Physics2D.gravity.y * (lowJumpMultiplier - 1) * Time.deltaTime;
         }
 
         //if (Input.anyKey)
@@ -75,5 +84,15 @@ public class MarioController : MonoBehaviour {
         //            Debug.Log("Key pressed : " + kcode);
         //    }
         //}
+
+        var velo = _rigidbody.velocity;
+        velo.x = Mathf.Clamp(velo.x, -MaxSpeed, MaxSpeed);
+
+        if (Math.Abs(h) < 0.01)
+        {
+            velo.x = Mathf.Lerp(velo.x, 0, SlowDownLerp);
+        }
+
+        _rigidbody.velocity = velo;
     }
 }
