@@ -6,7 +6,9 @@ using UnityEngine;
 public class MarioController : MonoBehaviour {
 
     private Rigidbody2D _rigidbody;
-    public float VelocityMultiplier = 1f;
+    public float VelocityMPerS = 1f;
+
+    public MarioStates marioStates;
 
     public float JumpVelocity = 1f;
 
@@ -16,50 +18,59 @@ public class MarioController : MonoBehaviour {
 
     public MarioVisualizer marioVisual;
 
-    // Use this for initialization
+    [SerializeField]
+    private float _groundCheckRayLength;
+
     void Start () {
         marioStates = new MarioStates();
-        marioVisual = GetComponent<MarioVisualizer>();
         _rigidbody = GetComponent<Rigidbody2D>();
-	}
 
-    private bool _grounded
-    {
-        get
-        {
-            return _numGrounded > 0;
-        }
+        AdjustScale();
+        UpdateMarioHeight();
     }
-    private int _numGrounded;
+    
+    private int _numColliding;
+
+    private bool IsGrounded()
+    {
+        var isGrounded = _IsGrounded();
+        //Debug.Log("Grounded: " + isGrounded);
+        return isGrounded;
+    }
+    private bool _IsGrounded()
+    {
+        if (_numColliding <= 0) return false;
+
+        RaycastHit2D hit = Physics2D.Raycast(transform.position, Vector3.down, _groundCheckRayLength, LayerMask.GetMask("Ground"));
+        Debug.DrawRay(transform.position, Vector3.down, Color.red, 1f);
+
+        //if (hit.collider != null)
+        //{
+        //    Debug.Log("Found Collider: " + hit.collider != null);
+        //    Debug.Log("Type ground: " + hit.collider.CompareTag("Ground"));
+        //}
+        return hit.collider != null && hit.collider.CompareTag("Ground");
+    }
+    private bool IsJumping()
+    {
+        return !IsGrounded() && _numColliding == 0;
+    }
+
     private void OnCollisionEnter2D(Collision2D collision)
     {
         if (collision.collider.CompareTag("Ground"))
         {
-            Debug.Log("Grounded ");
-            _numGrounded++;
+            _numColliding++;
 
-            if (_numGrounded > 1)
+            if (IsGrounded())
             {
-                var velo = _rigidbody.velocity;
-                velo.y = 0;
-                _rigidbody.velocity = velo;
+                ResetVelocityY();
+            } else
+            {
+                //Debug.Log("Collision with " + collision.collider.name + ". Not grounded");
             }
-        } 
-    }
-
-    private void OnTriggerEnter2D(Collider2D collision)
-    {
-        if (collision.CompareTag("Enemy"))
+        } else
         {
-            Destroy(collision.gameObject);
-            Debug.Log("Enemy");
-            EnemiesTrigger();
-        }
-        else if (collision.CompareTag("Burger"))
-        {
-            Destroy(collision.gameObject);
-            Debug.Log("Burger");
-            BurgerTrigger();
         }
     }
 
@@ -67,108 +78,145 @@ public class MarioController : MonoBehaviour {
     {
         if (collision.collider.CompareTag("Ground"))
         {
-            Debug.Log("Ungrounded");
-
-            _numGrounded--;
-
-            
+            _numColliding--;
         }
     }
 
-    public float SlowDownLerp = .3f;
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.CompareTag("Enemy"))
+        {
+            Destroy(collision.gameObject);
+            //Debug.Log("Enemy");
+            EnemiesTrigger();
+        }
+
+        else if (collision.CompareTag("Burger"))
+        {
+            Destroy(collision.gameObject);
+            //Debug.Log("Burger");
+            BurgerTrigger();
+        }
+    }
+
+    private void FixedUpdate()
+    {
+        ApplyDirectControls();
+        ApplyMarioFlavorJump();
+        ClampSpeed();
+    }
+
+    private void ResetVelocityY()
+    {
+        var velocity = _rigidbody.velocity;
+        velocity.y = 0;
+        _rigidbody.velocity = velocity;
+    }
+
+    private void ApplyDirectControls()
+    {
+        var xAxis = Input.GetAxis("Horizontal");
+
+        var velocity = _rigidbody.velocity;
+
+        var isGrounded = IsGrounded();
+        if (isGrounded || IsJumping())
+        {
+            velocity.x = VelocityMPerS * xAxis;
+        }
+
+        if (Input.GetButton("Jump") && IsGrounded())
+        {
+            velocity.y = JumpVelocity;
+        }
+
+        _rigidbody.velocity = velocity;
+    }
+
+    private void ApplyMarioFlavorJump()
+    {
+        var velocity = _rigidbody.velocity;
+
+        if (velocity.y < -10E-3) // if falling
+        {
+            velocity.y += Physics2D.gravity.y * (fallMultiplier - 1) * Time.fixedDeltaTime;
+        }
+        else if (velocity.y > 10E-3 && !Input.GetButton("Jump")) // if jumping but not holding jump
+        {
+            velocity.y = Physics2D.gravity.y * (lowJumpMultiplier - 1) * Time.fixedDeltaTime;
+        }
+
+        _rigidbody.velocity = velocity;
+    }
+
+    private void ClampSpeed()
+    {
+        var velocity = _rigidbody.velocity;
+        velocity.x = Mathf.Clamp(velocity.x, -MaxSpeed, MaxSpeed);
+        _rigidbody.velocity = velocity;
+    }
+    
     void Update () {
-        var h = Input.GetAxis("Horizontal");
-
-        _rigidbody.velocity += VelocityMultiplier * h * Vector2.right * Time.deltaTime;
-
-        if (Input.GetButton("Jump") && _grounded)
-        {
-            _rigidbody.velocity += Vector2.up * JumpVelocity * Time.deltaTime;
-            // different velocities based on speed
-        }
-
-        if (_rigidbody.velocity.y < -0.01)
-        {
-            _rigidbody.velocity += Vector2.up * Physics2D.gravity.y * (fallMultiplier - 1) * Time.deltaTime;
-        }
-        else if (_rigidbody.velocity.y > 0.01 && !Input.GetButton("Jump"))
-        {
-            _rigidbody.velocity += Vector2.up * Physics2D.gravity.y * (lowJumpMultiplier - 1) * Time.deltaTime;
-        }
-
-        //if (Input.anyKey)
-        //{
-        //    foreach (KeyCode kcode in Enum.GetValues(typeof(KeyCode)))
-        //    {
-        //        if (Input.GetKeyDown(kcode))
-        //            Debug.Log("Key pressed : " + kcode);
-        //    }
-        //}
-
-        var velo = _rigidbody.velocity;
-        velo.x = Mathf.Clamp(velo.x, -MaxSpeed, MaxSpeed);
-
-        if (Math.Abs(h) < 0.01)
-        {
-            velo.x = Mathf.Lerp(velo.x, 0, SlowDownLerp);
-        }
-
-        _rigidbody.velocity = velo;
-
         if (_rigidbody.velocity.x > 0)
         {
-            marioVisual.Walk();
+            if (IsJumping())
+                marioVisual.Jump();
+            else
+                marioVisual.Walk();
         }
         else if (_rigidbody.velocity.x < 0)
         {
-            marioVisual.WalkBackwards();
+            if (IsJumping())
+                marioVisual.JumpBackwards();
+            else
+                marioVisual.WalkBackwards();
         } else
         {
             marioVisual.Idle();
         }
     }
 
+    private void UpdateMarioHeight()
+    {
+        SpriteRenderer spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+        _groundCheckRayLength = spriteRenderer.size.y * transform.localScale.y / 2 + .01f;
+    }
+
+    private void AdjustScale()
+    {
+        if (marioStates.burgersEaten <= 0)
+        {
+            transform.localScale = Vector3.one;
+            marioVisual.SetSlim(true);
+        } else
+        {
+            transform.localScale = new Vector3(marioStates.burgersEaten * 0.2f + 1, marioStates.burgersEaten * 0.2f + 1, marioStates.burgersEaten * 0.2f + 1);
+            marioVisual.SetSlim(false);
+        }
+
+        UpdateMarioHeight();
+    }
 
     public void EnemiesTrigger()
     {
         marioStates.burgersEaten--;
-        this.transform.localScale = new Vector3(marioStates.burgersEaten * 0.2f - 1, marioStates.burgersEaten * 0.2f - 1, marioStates.burgersEaten * 0.2f - 1);
-        if (marioStates.burgersEaten <= 0)
-        {
-            this.transform.localScale = Vector3.one;
-        }
+        AdjustScale();
     }
 
     public void BurgerTrigger()
     {
         marioStates.burgersEaten++;
-        this.transform.localScale = new Vector3(marioStates.burgersEaten * 0.2f + 1, marioStates.burgersEaten * 0.2f + 1, marioStates.burgersEaten * 0.2f + 1);
-        if(marioStates.burgersEaten <= 0)
-        {
-            this.transform.localScale = Vector3.one;
-        }
+        AdjustScale();
     }
     
     public void CarrotHelper()
     {
         marioStates.burgersEaten++;
-        this.transform.localScale = new Vector3(marioStates.burgersEaten * 0.2f + 1, marioStates.burgersEaten * 0.2f + 1, marioStates.burgersEaten * 0.2f + 1);
-        if (marioStates.burgersEaten <= 0)
-        {
-            this.transform.localScale = Vector3.one;
-        }
+        AdjustScale();
     }
-
-    public void OnBeforeTransformParentChanged()
-    {
-        marioVisual.SetSlim(marioStates.burgersEaten < 0);
-    }
-    public MarioStates marioStates;
-
 }
 
 public class MarioStates
 {
     public int burgersEaten = 0;
-    
 }

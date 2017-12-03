@@ -3,102 +3,95 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class MarioVisualizer : MonoBehaviour {
-
-    public void SetSlim(bool isSlim)
-    {
-        _isSlim = isSlim;
-        // repeat last state
-        ChangeAnimator();
-    }
-
     private bool _isSlim;
     private Animator _animator;
+
     enum States { 
         Walking,
-        WalkingBackwards,
         Jumping,
-        JumpingBackwards,
         Idle
     }
+
+    private bool goingRight = false;
     private States _lastState = States.Idle;
 
-    void ChangeAnimator()
+    void AdjustOrientation()
+    {
+        var scale = transform.localScale;
+        scale.x = (goingRight ? 1 : -1) * Mathf.Abs(scale.x);
+        transform.localScale = scale;
+    }
+
+    void AdjustAnimator()
     {
         switch (_lastState)
         {
             case States.Walking:
                 _animator.SetTrigger(AdjustName("Walk"));
-
-                break;
-            case States.WalkingBackwards:
-                _animator.SetTrigger(AdjustName("WalkBackwards"));
-
                 break;
             case States.Jumping:
                 _animator.SetTrigger(AdjustName("Jump"));
-
-                break;
-            case States.JumpingBackwards:
-                _animator.SetTrigger(AdjustName("JumpBackwards"));
-
                 break;
             case States.Idle:
                 _animator.SetTrigger(AdjustName("Idle"));
-
                 break;
         }
     }
 
-	void Start () {
-        _animator = GetComponent<Animator>();
-	}
-	
-	void Update () {
-		//if (Input.GetKeyDown(KeyCode.F))
-  //      {
-  //          Debug.Log("Get Slim");
-  //          SetSlim(!_isSlim);
-  //      }
-
-  //      if (Input.GetKey(KeyCode.W))
-  //      {
-  //          Walk();
-  //      }
+    void AdjustVisuals()
+    {
+        AdjustOrientation();
+        AdjustAnimator();
     }
+
+	void Awake () {
+        _animator = GetComponent<Animator>();
+        AdjustVisuals();
+	}
 
     private string AdjustName(string command)
     {
         return command + (_isSlim ? "" : "Fat");
     }
-    
+
+    public void SetSlim(bool isSlim)
+    {
+        _isSlim = isSlim;
+
+        AdjustVisuals();
+    }
+
     public void Walk()
     {
         _lastState = States.Walking;
-        ChangeAnimator();
+        goingRight = true;
+        AdjustVisuals();
     }
 
     public void WalkBackwards()
     {
-        _lastState = States.WalkingBackwards;
-        ChangeAnimator();
+        _lastState = States.Walking;
+        goingRight = false;
+        AdjustVisuals();
     }
 
     public void Jump()
     {
         _lastState = States.Jumping;
-        ChangeAnimator();
+        goingRight = true;
+        AdjustVisuals();
     }
 
     public void JumpBackwards()
     {
-        _lastState = States.JumpingBackwards;
-        ChangeAnimator();
+        _lastState = States.Jumping;
+        goingRight = false;
+        AdjustVisuals();
     }
 
     public void Idle()
     {
         _lastState = States.Idle;
-        ChangeAnimator();
-
+        AdjustVisuals();
     }
 }
