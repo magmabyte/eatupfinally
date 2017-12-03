@@ -97,6 +97,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   DampTime: 0.15
+  LazyWaitMeter: 1
   Target: {fileID: 0}
 --- !u!124 &124323822310742462
 Behaviour:

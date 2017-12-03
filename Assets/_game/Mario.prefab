@@ -99,13 +99,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6dd95fb3cf7c7114294929bbdb4a0058, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  VelocityMultiplier: 15
+  VelocityMPerS: 1
   JumpVelocity: 225
   fallMultiplier: 2.5
   lowJumpMultiplier: 2
   MaxSpeed: 3
   marioVisual: {fileID: 0}
-  SlowDownLerp: 0.3
+  _groundCheckRayLength: 0
 --- !u!212 &212745535541080048
 SpriteRenderer:
   m_ObjectHideFlags: 1
